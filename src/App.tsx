@@ -9,7 +9,6 @@ import Remedies from "./pages/Remedies";
 import Consultation from "./pages/Consultation";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import ProtectedRoute from "./components/AuthGuard";
 
 function App() {
   return (
@@ -35,15 +34,11 @@ function App() {
               </AuthGuard>
             }
           /> */}
-          <Route path="/login" element={<Login />}/>
-          <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/predict" element={<Predict />} />
           <Route path="/remedies" element={<Remedies />} />
           <Route path="/consultation" element={<Consultation />} />
-        </Route>
-          
         </Routes>
       </div>
     </Router>
