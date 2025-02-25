@@ -13,8 +13,12 @@ export default function Prediction() {
     chol: '',
     fbs: '',
     exang: '',
-    oldpeak: ''
-  });
+    oldpeak: '',
+    chestPain: '',
+    bloodPressure: '',
+    bloodSugar: '',
+    angina: '',
+    maxHeartRate: '' });
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,7 +31,7 @@ export default function Prediction() {
     try {
       const result = await predictHeartDisease({
         ...formData,
-        userId: user?.id,
+        userId: user?.id || '',
         age: Number(formData.age),
         sex: Number(formData.sex),
         cp: Number(formData.cp),
