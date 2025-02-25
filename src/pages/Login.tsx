@@ -1,112 +1,237 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  signInWithRedirect,
-  getRedirectResult,
-  signInWithEmailAndPassword,
-  UserCredential,
-} from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
-// import { auth, googleProvider } from "../config/firebase";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Heart, Mail, Lock, Github, Twitter } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [error, setError] = useState<string>("");
-
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [resetPassword, setResetPassword] = useState(false);
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  // Handle Email/Password Login
-  const handleLogin = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const userCredential: UserCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const token = await userCredential.user.getIdToken(); // Get Firebase Token
-      localStorage.setItem("token", token); // Store token
-      navigate("/"); // Redirect to Home
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      }
+      setError('');
+      setLoading(true);
+      await signIn(email, password);
+      navigate('/');
+    } catch (err) {
+      setError('Failed to sign in');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle Google Sign-In with Redirect
-  const signInWithGoogle = async () => {
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      }
+      setError('');
+      setLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+      if (error) throw error;
+      setResetPassword(false);
+      alert('Password reset link sent to your email!');
+    } catch (err) {
+      setError('Failed to send reset password email');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Get Token after Redirect
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          result.user.getIdToken().then((token) => {
-            localStorage.setItem("token", token);
-            navigate("/home");
-          });
-        }
-      })
-      .catch((error) => {
-        if (error instanceof Error) {
-          setError(error.message);
+  const handleSocialLogin = async (provider: 'github' | 'google') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
         }
       });
-  }, [navigate]);
+      if (error) throw error;
+    } catch (err) {
+      setError('Failed to sign in with social provider');
+      console.error(err);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-6 shadow-md rounded-lg w-96">
-        <h2 className="text-2xl font-semibold text-center text-gray-700 mb-5">
-          Login
-        </h2>
-        {error && (
-          <p className="text-red-500 text-sm text-center mb-3">{error}</p>
-        )}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 mb-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 outline-none"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 outline-none"
-        />
-        <button
-          onClick={handleLogin}
-          className="w-full py-2 mb-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition duration-300"
-        >
-          Login
-        </button>
-        <button
-          onClick={signInWithGoogle}
-          className="w-full py-2 text-white bg-red-600 rounded-md hover:bg-red-700 transition duration-300 flex items-center justify-center"
-        >
-          <span>Sign in with Google</span>
-        </button>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-[80vh] flex items-center justify-center"
+    >
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <div className="text-center mb-8">
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <Heart className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          </motion.div>
+          <h1 className="text-2xl font-bold">Welcome Back</h1>
+          <p className="text-gray-600">Sign in to access your account</p>
+        </div>
 
-        {/* Signup Link */}
-        <p className="text-center text-gray-600 mt-4">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-blue-600 hover:underline">
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-red-50 text-red-500 p-3 rounded-lg mb-4"
+          >
+            {error}
+          </motion.div>
+        )}
+
+        {!resetPassword ? (
+          <>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setResetPassword(true)}
+                  className="text-sm text-red-500 hover:text-red-600"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading}
+                className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 disabled:opacity-50"
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </motion.button>
+            </form>
+
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleSocialLogin('github')}
+                  className="flex justify-center items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <Github className="h-5 w-5 mr-2" />
+                  GitHub
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleSocialLogin('google')}
+                  className="flex justify-center items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5 mr-2" />
+                  Google
+                </motion.button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <form onSubmit={handleResetPassword} className="space-y-6">
+            <div>
+              <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <input
+                  id="reset-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : 'Send Reset Link'}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => setResetPassword(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
+              >
+                Back to Login
+              </motion.button>
+            </div>
+          </form>
+        )}
+
+        <p className="mt-4 text-center text-gray-600">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-red-500 hover:text-red-600">
             Sign up
           </Link>
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }
