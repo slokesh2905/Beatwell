@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Heart, Mail, Lock, Github, Twitter } from 'lucide-react';
+import { Heart, Mail, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 
@@ -48,17 +48,17 @@ export default function Login() {
     }
   };
 
-  const handleSocialLogin = async (provider: 'github' | 'google') => {
+  const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`
         }
       });
       if (error) throw error;
     } catch (err) {
-      setError('Failed to sign in with social provider');
+      setError('Failed to sign in with Google');
       console.error(err);
     }
   };
@@ -79,7 +79,7 @@ export default function Login() {
             <Heart className="h-12 w-12 text-red-500 mx-auto mb-4" />
           </motion.div>
           <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to access your account</p>
+          <p className="text-gray-600">Sign in to access your Beat-Well account</p>
         </div>
 
         {error && (
@@ -160,25 +160,15 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-6">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleSocialLogin('github')}
-                  className="flex justify-center items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  <Github className="h-5 w-5 mr-2" />
-                  GitHub
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleSocialLogin('google')}
-                  className="flex justify-center items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  onClick={handleGoogleLogin}
+                  className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5 mr-2" />
-                  Google
+                  Continue with Google
                 </motion.button>
               </div>
             </div>
